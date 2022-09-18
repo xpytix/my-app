@@ -7,3 +7,4 @@ export const firebaseKey = {
     appId: "1:622595985342:web:a23523d7ceaab2457a33ef",
     measurementId: "G-YJWTSSQQ77"
   };
+  

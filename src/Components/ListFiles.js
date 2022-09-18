@@ -8,9 +8,10 @@ import { Container } from '@mui/material';
 const ListFiles = (props) => {
 
     let file = props.selectedFile;
+    
     const Image = () => file.map(e=>{ 
-        console.log(file)
         return <img key={e} style={{padding: 5}} src={e} width="100" height="100"></img>
+       
     })
   
         return (
@@ -22,7 +23,6 @@ const ListFiles = (props) => {
                             width:"100px",
                             height:"100px"}}>
                                 <Image/>
-                                
                     </ImageListItem>
     
                 </ImageList>

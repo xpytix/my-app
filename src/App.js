@@ -21,14 +21,6 @@ function App() {
     } else {
       alert("Jezeli chcesz sprawnie korzystać z aplikacji udostępnij lokalizacje :)")
     }
-
-    const getPlaces = async () => {
-      const data = await getDocs(placesCollectionRef);
-      setPlaces(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
-      console.log(places);
-      
-    };
-    getPlaces();
   }, []);
 
   return (

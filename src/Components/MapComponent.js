@@ -15,39 +15,71 @@ import {
   firestore,
   GeoPoint
 } from "firebase/firestore";
-import { getStorage, ref, uploadBytes } from "firebase/storage";
-
+import { getStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { v4 } from 'uuid';
+import { bool } from 'prop-types';
+import { async } from '@firebase/util';
 
 export const initPosition = [50.545989, 20.614758]
 
 export const MapComponent = () => {
     
-
     const [position, setPosition] = useState(initPosition);
     const [zoom, setZoom] = useState(15);
-    const [markers, setMarkers] = useState([])
+    const [markers, setMarkers] = useState([]);
+    const [testmarkers, setTestMarkers] = useState([]);
 
-    
     // form
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [markerPosition, setMarkerPosition] = useState([]);
     const [images, setImages] = useState([]);
     const [correct, setCorrect] = useState("1");
+    const [createDate, setCreateDate] = useState(0);
 
     // firebase
-    const usersCollectionRef = collection(db, "markers");
+    const markersCollectionRef = collection(db, "markers");
     const storage = getStorage();
     const storageRef = ref(storage, 'markers');
-
-    const createUser = async () => {
-        let geo = new GeoPoint(markerPosition.lat, markerPosition.lng);
-        await addDoc(usersCollectionRef, { markerPosition: geo ,title: title, description: description, correct: correct  });
-        uploadBytes(storageRef, images).then((snapshot) => {
-            console.log('Uploaded a blob or file!');
-          });
-    };
     
+    useEffect(() => {
+
+        const getMarker = async () =>{
+
+            const data = await getDocs(markersCollectionRef);
+            setTestMarkers(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+            console.log(testmarkers);
+        }
+
+        getMarker();
+      }, []);
+
+
+    const createMarker = async () => {
+
+        let geo = new GeoPoint(markerPosition.lat, markerPosition.lng);
+        await addDoc(markersCollectionRef, { markerPosition: geo ,title: title, description: description, correct: correct, createDate: createDate});
+    
+    };
+
+   
+    const uploadImage =(nameFolder)=>{
+        const isExist = checkIfFileExist(nameFolder);
+        console.log(isExist)
+        if(images !== null && isExist === false){
+            images.map(image =>{
+                const imageRef = ref(storage, `${nameFolder}/${image.name + v4()}`)
+                uploadBytes(imageRef, image).then(()=>{
+                    console.log(image.name + " upload ");
+                })
+            })
+        }
+    }
+
+    const checkIfFileExist =(nameFolder) => {
+        console.log(nameFolder)
+       
+    }
 
     const resetForm =()=>{
         setTitle("");
@@ -61,15 +93,16 @@ export const MapComponent = () => {
       }, []);
 
     const onChangeImage = event => {
+
         let arrayFiles = event.target.files;
         if(arrayFiles.lenght !== 0){
               const newFiles = new Array();
             for(let i = 0; i < arrayFiles.length; i++){
-                console.log('ss')
-                newFiles.push(URL.createObjectURL(event.target.files[i]))
+                newFiles.push(event.target.files[i])
              }
              setImages(newFiles);
          }      
+
     };
 
     // modal
@@ -90,14 +123,15 @@ export const MapComponent = () => {
             title: "",
             description: "",
             images: [],
-            correct: ""
+            correct: "",
+            createDate: null,
         }
 
         marker.markerPosition = markerPosition;
         marker.title = title;
         marker.description = description;
-        marker.images = images;
-        console.log(correct);
+        marker.images = title;
+
         if(correct === "1")
         {
             marker.correct = iconQuestion;
@@ -108,15 +142,18 @@ export const MapComponent = () => {
         }
         else
             marker.correct = iconWarning;
-    
+
+        setCreateDate(new Date());
+        marker.createDate = createDate;
+
 
         setMarkers([...markers, marker]);
-        createUser();
-        console.log(markers);
+        createMarker();
+        uploadImage(marker.title)
         handleClose();
     }
 
-    function LocationMarker() {
+    const LocationMarker = () =>{
 
         const map = useMapEvents({
           click(e) {
@@ -147,6 +184,7 @@ export const MapComponent = () => {
             Cześć! Jesteś tutaj.
         </Popup>
         </Marker>
+
         {/* Markers from db */}
         {markers.map((element, idx) => 
           <Marker icon={element.correct} key={`marker-${idx}`} position={element.markerPosition}>
